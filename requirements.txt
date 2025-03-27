@@ -2,3 +2,6 @@ livekit-agents~=0.8
 livekit-plugins-deepgram~=0.6
 livekit-plugins-openai~=0.7
 livekit-plugins-silero~=0.6
+livekit-plugins-cartesia
+livekit-plugins-google
+livekit-plugins-deepgram

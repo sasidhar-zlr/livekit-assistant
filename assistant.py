@@ -9,7 +9,10 @@ from livekit.agents.llm import (
     ChatMessage,
 )
 from livekit.agents.voice_assistant import VoiceAssistant
-from livekit.plugins import deepgram, openai, silero
+from livekit.plugins import deepgram, openai, silero , cartesia
+import google.generativeai as genai
+import os
+os.getenv('CEREBRAS_API_KEY')
 
 
 class AssistantFunction(agents.llm.FunctionContext):
@@ -67,7 +70,12 @@ async def entrypoint(ctx: JobContext):
         ]
     )
 
-    gpt = openai.LLM(model="gpt-4o")
+    # gpt = openai.LLM(model="gpt-4o")
+    
+    
+    GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+    genai.configure(api_key=GOOGLE_API_KEY)
+    gpt = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
     # Since OpenAI does not support streaming TTS, we'll use it with a StreamAdapter
     # to make it compatible with the VoiceAssistant
@@ -80,9 +88,9 @@ async def entrypoint(ctx: JobContext):
 
     assistant = VoiceAssistant(
         vad=silero.VAD.load(),  # We'll use Silero's Voice Activity Detector (VAD)
-        stt=deepgram.STT(),  # We'll use Deepgram's Speech To Text (STT)
-        llm=gpt,
-        tts=openai_tts,  # We'll use OpenAI's Text To Speech (TTS)
+        stt=deepgram.STT(api_key = str(os.getenv('DEEPGRAM_API_KEY'))),  # We'll use Deepgram's Speech To Text (STT)
+        llm=openai.LLM.with_cerebras(),
+        tts=cartesia.TTS(),  # We'll use OpenAI's Text To Speech (TTS)
         fnc_ctx=AssistantFunction(),
         chat_ctx=chat_context,
     )
@@ -136,4 +144,7 @@ async def entrypoint(ctx: JobContext):
 
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, 
+                              ws_url = str(os.getenv('LIVEKIT_URL')), 
+                              api_key = str(os.getenv('LIVEKIT_API_KEY')),
+                              api_secret = str(os.getenv('LIVEKIT_API_SECRET'))))
